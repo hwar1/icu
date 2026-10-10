@@ -71,7 +71,7 @@
     }
 
     clearTimeout(closeTimer);
-    closeTimer = setTimeout(hide, 9000);
+    closeTimer = setTimeout(hide, 3000);
   }
 
   function hide() {
@@ -79,7 +79,6 @@
     $("celebrate").classList.remove("show");
   }
 
-  $("celClose").addEventListener("click", hide);
   $("celebrate").addEventListener("click", (e) => {
     if (e.target === $("celebrate")) hide();
   });
