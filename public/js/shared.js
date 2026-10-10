@@ -88,36 +88,94 @@ const App = (() => {
     el._raf = requestAnimationFrame(step);
   }
 
-  /* استدعاء API مع رسائل خطأ عربية */
-  async function api(path, options = {}) {
+  /* طلب HTTP متوافق: fetch إن توفر، وإلا XMLHttpRequest (لمتصفحات التلفاز القديمة) */
+  function httpRequest(path, options = {}) {
     const opts = { ...options };
     opts.headers = { "Content-Type": "application/json", ...(options.headers || {}) };
     if (opts.body && typeof opts.body !== "string") opts.body = JSON.stringify(opts.body);
-    const res = await fetch(path, opts);
-    let data = null;
-    try {
-      data = await res.json();
-    } catch (_e) {
-      data = {};
+
+    if (typeof window.fetch === "function") {
+      return fetch(path, opts).then(async (res) => {
+        let data = null;
+        try {
+          data = await res.json();
+        } catch (_e) {}
+        if (!res.ok) {
+          const err = new Error((data && data.error) || "حدث خطأ غير متوقع");
+          err.status = res.status;
+          throw err;
+        }
+        return data;
+      });
     }
-    if (!res.ok) {
-      if (res.status === 401 && !path.endsWith("/api/login")) {
-        window.location.href = "/login?next=" + encodeURIComponent(location.pathname);
-      }
-      throw new Error(data.error || "حدث خطأ غير متوقع");
-    }
-    return data;
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(opts.method || "GET", path, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.onload = () => {
+        let data = null;
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch (_e) {}
+        if (xhr.status >= 200 && xhr.status < 300) return resolve(data);
+        const err = new Error((data && data.error) || "حدث خطأ غير متوقع");
+        err.status = xhr.status;
+        reject(err);
+      };
+      xhr.onerror = () => reject(new Error("تعذر الاتصال بالخادم"));
+      xhr.send(opts.body);
+    });
   }
 
-  /* التحديث المباشر عبر SSE */
+  /* استدعاء API مع رسائل خطأ عربية */
+  async function api(path, options = {}) {
+    try {
+      return await httpRequest(path, options);
+    } catch (err) {
+      if (err.status === 401 && !path.endsWith("/api/login")) {
+        window.location.href = "/login?next=" + encodeURIComponent(location.pathname);
+      }
+      throw err;
+    }
+  }
+
+  /* التحديث المباشر: SSE إن توفر، وإلا تحديث دوري كل 4 ثوانٍ */
   function stream({ onSnapshot, onCelebrate, onStatus } = {}) {
+    if (typeof window.EventSource === "undefined") {
+      const wrap = { mode: "poll", closed: false };
+      let lastId = null;
+      const tick = async () => {
+        try {
+          const s = await httpRequest("/api/campaign");
+          if (wrap.closed) return;
+          onStatus && onStatus(true);
+          if (lastId !== null && s.totals.latest && s.totals.latest.id !== lastId) {
+            onCelebrate && onCelebrate({ donation: s.totals.latest });
+          }
+          lastId = s.totals.latest ? s.totals.latest.id : null;
+          onSnapshot && onSnapshot(s);
+        } catch (_e) {
+          onStatus && onStatus(false);
+        }
+      };
+      tick();
+      wrap._timer = setInterval(tick, 4000);
+      wrap.close = () => {
+        wrap.closed = true;
+        clearInterval(wrap._timer);
+      };
+      return wrap;
+    }
+
     let es;
     try {
       es = new EventSource("/api/stream");
     } catch (_e) {
       onStatus && onStatus(false);
-      return null;
+      return { mode: "sse", close() {} };
     }
+    es.mode = "sse";
     es.addEventListener("open", () => onStatus && onStatus(true));
     es.addEventListener("snapshot", (e) => {
       try {

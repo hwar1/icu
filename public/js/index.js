@@ -15,19 +15,13 @@
     const c = s.campaign;
 
     renderTitle(c.title);
-    $("campaignSubtitle").textContent = c.subtitle || "";
+    const sub = $("campaignSubtitle");
+    if (sub) sub.textContent = c.subtitle || "";
 
     App.animateValue($("totalValue"), shownTotal, s.goalTotal);
     shownTotal = s.goalTotal;
     $("totalCurrency").textContent =
       `${App.currencyName(c.goalCurrency)} (${c.goalCurrency})`;
-
-    const pct = Math.round(s.progress * 10) / 10;
-    $("progressPct").textContent = `${App.formatNumber(pct, 1)}%`;
-    $("progressFill").style.width = `${s.progress}%`;
-    $("goalLine").innerHTML =
-      `الهدف: <b class="num">${App.formatNumber(c.goalAmount)}</b> ${App.escapeHtml(c.goalCurrency)}` +
-      ` &nbsp;—&nbsp; تم جمع: <b class="num">${App.formatNumber(s.goalTotal)}</b> ${App.escapeHtml(c.goalCurrency)}`;
 
     $("others").innerHTML = s.others
       .map(

@@ -85,26 +85,20 @@
         <section class="card">
           <h2>إعدادات الحملة</h2>
           <form id="settingsForm">
-            <div class="row">
-              <div class="field">
-                <label for="goalAmount">المبلغ المستهدف</label>
-                <input id="goalAmount" type="number" min="0" step="1" required />
-              </div>
-              <div class="field">
-                <label for="goalCurrency">عملة الهدف</label>
-                <input id="goalCurrency" maxlength="24" required />
-              </div>
+            <div class="field">
+            <label for="goalCurrency">العملة الأساسية (تظهر في الشاشة العامة)</label>
+            <input id="goalCurrency" maxlength="24" required />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="startDate">بداية الحملة</label>
+              <input id="startDate" type="date" required />
             </div>
-            <div class="row">
-              <div class="field">
-                <label for="startDate">بداية الحملة</label>
-                <input id="startDate" type="date" required />
-              </div>
-              <div class="field">
-                <label for="endDate">نهاية الحملة</label>
-                <input id="endDate" type="date" required />
-              </div>
+            <div class="field">
+              <label for="endDate">نهاية الحملة</label>
+              <input id="endDate" type="date" required />
             </div>
+          </div>
             <div class="field">
               <label for="campaignTitle">عنوان الحملة</label>
               <input id="campaignTitle" maxlength="160" required />

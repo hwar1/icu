@@ -251,7 +251,12 @@ function currencyTotals() {
 function totals() {
   const byCurrency = currencyTotals();
   const operations = byCurrency.reduce((s, r) => s + r.count, 0);
-  return { byCurrency, operations };
+  const latest = db
+    .prepare(
+      `SELECT * FROM donations ORDER BY created_at DESC, id DESC LIMIT 1`
+    )
+    .get() || null;
+  return { byCurrency, operations, latest };
 }
 
 /* ------------------------------------------------------------------ */

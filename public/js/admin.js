@@ -154,7 +154,6 @@
 
   async function loadSettings() {
     const s = await App.api("/api/settings");
-    $("goalAmount").value = s.goal_amount;
     $("goalCurrency").value = s.goal_currency;
     $("startDate").value = s.start_date;
     $("endDate").value = s.end_date;
@@ -169,7 +168,6 @@
       await App.api("/api/settings", {
         method: "PUT",
         body: {
-          goal_amount: $("goalAmount").value,
           goal_currency: $("goalCurrency").value.trim().toUpperCase(),
           start_date: $("startDate").value,
           end_date: $("endDate").value,
