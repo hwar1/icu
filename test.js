@@ -1,7 +1,17 @@
 /* اختبار أتمتة لمشروع حملة سيارة إسعاف الظاهرية */
 "use strict";
 
-const BASE = "http://localhost:3000";
+process.env.PORT = "3100";
+
+const { newDb } = require("pg-mem");
+const store = require("./server/db");
+const { start } = require("./server/index");
+
+const mem = newDb();
+const { Pool: MemPool } = mem.adapters.createPg();
+store.connectAdapter(new MemPool());
+
+const BASE = "http://localhost:3100";
 
 let passed = 0;
 let failed = 0;
@@ -54,6 +64,7 @@ async function addDonation(amount, currency, at, note) {
 }
 
 async function main() {
+  await start();
   console.log("1) فحص الحماية والمصادقة");
   const d0 = await req("/api/campaign");
   check("الشاشة العامة/public متاحة", d0.status === 200 && d0.data.campaign, `status=${d0.status}`);
@@ -188,11 +199,10 @@ async function main() {
   const tFinal = (await req("/api/campaign")).data;
   check("القاعدة عادت فارغة تمامًا", tFinal.totals.operations === 0 && tFinal.totals.byCurrency.length === 0 && tFinal.goalTotal === 0, JSON.stringify(tFinal.totals));
 
-  const store = require("./server/db");
   const { hashPassword } = require("./server/auth");
-  store.setSetting("admin_password_hash", hashPassword("admin"));
-  store.setSetting("must_change_password", "1");
-  check("استعادة كلمة المرور إلى admin مع تفعيل تنبيه التغيير", store.getSetting("admin_password_hash").startsWith("scrypt$") && store.getSetting("must_change_password") === "1");
+  await store.setSetting("admin_password_hash", hashPassword("admin"));
+  await store.setSetting("must_change_password", "1");
+  check("استعادة كلمة المرور إلى admin مع تفعيل تنبيه التغيير", (await store.getSetting("admin_password_hash")).startsWith("scrypt$") && (await store.getSetting("must_change_password")) === "1");
 
   const restoreSettings = await req("/api/settings", { method: "PUT", cookie: sidCookie, body: { goal_amount: 100000, goal_currency: "ILS" } });
   check("استعادة هدف الحملة الافتراضي", restoreSettings.status === 200, `status=${restoreSettings.status}`);

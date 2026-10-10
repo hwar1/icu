@@ -12,10 +12,6 @@ const HOST = process.env.HOST || '0.0.0.0';
 const ROOT_DIR = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 
-auth.ensureAdminPassword();
-store.cleanupSessions();
-setInterval(() => store.cleanupSessions(), 60 * 60 * 1000).unref();
-
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
@@ -37,9 +33,9 @@ function broadcast(event, data) {
   }
 }
 
-function snapshot() {
-  const campaign = store.campaignInfo();
-  const totals = store.totals();
+async function snapshot() {
+  const campaign = await store.campaignInfo();
+  const totals = await store.totals();
   const goalRow = totals.byCurrency.find((r) => r.currency === campaign.goalCurrency);
   const goalTotal = goalRow ? goalRow.total : 0;
   const others = totals.byCurrency.filter((r) => r.currency !== campaign.goalCurrency);
@@ -57,7 +53,7 @@ function snapshot() {
   };
 }
 
-app.get('/api/stream', (req, res) => {
+app.get('/api/stream', async (req, res) => {
   res.set({
     'Content-Type': 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache, no-transform',
@@ -66,7 +62,11 @@ app.get('/api/stream', (req, res) => {
   });
   res.flushHeaders?.();
   res.write(`retry: 3000\n\n`);
-  res.write(`event: snapshot\ndata: ${JSON.stringify(snapshot())}\n\n`);
+  try {
+    res.write(`event: snapshot\ndata: ${JSON.stringify(await snapshot())}\n\n`);
+  } catch (_e) {
+    /* تبقى بلا لقطة أوّلية */
+  }
 
   clients.add(res);
   const heartbeat = setInterval(() => {
@@ -114,9 +114,9 @@ function registerFailedLogin(ip) {
   loginAttempts.set(ip, rec);
 }
 
-app.post('/api/login', loginThrottle, (req, res) => {
+app.post('/api/login', loginThrottle, async (req, res) => {
   const { username, password } = req.body || {};
-  const result = auth.login(username, password);
+  const result = await auth.login(username, password);
   if (!result) {
     registerFailedLogin(req.ip || 'local');
     return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
@@ -126,24 +126,24 @@ app.post('/api/login', loginThrottle, (req, res) => {
   res.json({ ok: true, mustChangePassword: result.mustChangePassword });
 });
 
-app.post('/api/logout', (req, res) => {
-  auth.logout(auth.getSessionToken(req));
+app.post('/api/logout', async (req, res) => {
+  await auth.logout(auth.getSessionToken(req));
   auth.clearSessionCookie(res);
   res.json({ ok: true });
 });
 
-app.get('/api/me', (req, res) => {
-  const session = auth.sessionFromRequest(req);
+app.get('/api/me', async (req, res) => {
+  const session = await auth.sessionFromRequest(req);
   res.json({
     authenticated: Boolean(session),
-    mustChangePassword: store.getSetting('must_change_password') === '1',
-    username: store.getSetting('admin_username'),
+    mustChangePassword: (await store.getSetting('must_change_password')) === '1',
+    username: await store.getSetting('admin_username'),
   });
 });
 
-app.post('/api/change-password', auth.requireAuth, (req, res) => {
+app.post('/api/change-password', auth.requireAuth, async (req, res) => {
   const { oldPassword, newPassword } = req.body || {};
-  auth.changePassword(oldPassword, newPassword);
+  await auth.changePassword(oldPassword, newPassword);
   res.json({ ok: true });
 });
 
@@ -151,46 +151,46 @@ app.post('/api/change-password', auth.requireAuth, (req, res) => {
 /* واجهات عامة                                                         */
 /* ------------------------------------------------------------------ */
 
-app.get('/api/campaign', (_req, res) => {
-  res.json(snapshot());
+app.get('/api/campaign', async (_req, res) => {
+  res.json(await snapshot());
 });
 
-app.get('/api/totals', (_req, res) => {
-  res.json(snapshot());
+app.get('/api/totals', async (_req, res) => {
+  res.json(await snapshot());
 });
 
 /* ------------------------------------------------------------------ */
 /* التبرعات (محمية)                                                    */
 /* ------------------------------------------------------------------ */
 
-app.get('/api/donations', auth.requireAuth, (req, res) => {
+app.get('/api/donations', auth.requireAuth, async (req, res) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
   const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
   res.json({
-    items: store.listDonations(limit, offset),
-    total: store.countDonations(),
+    items: await store.listDonations(limit, offset),
+    total: await store.countDonations(),
   });
 });
 
-app.post('/api/donations', auth.requireAuth, (req, res) => {
-  const donation = store.createDonation(
+app.post('/api/donations', auth.requireAuth, async (req, res) => {
+  const donation = await store.createDonation(
     req.body || {},
-    store.getSetting('admin_username')
+    await store.getSetting('admin_username')
   );
   broadcast('celebrate', { donation });
-  broadcast('snapshot', snapshot());
+  broadcast('snapshot', await snapshot());
   res.status(201).json({ ok: true, donation });
 });
 
-app.put('/api/donations/:id', auth.requireAuth, (req, res) => {
-  const donation = store.updateDonation(Number(req.params.id), req.body || {});
-  broadcast('snapshot', snapshot());
+app.put('/api/donations/:id', auth.requireAuth, async (req, res) => {
+  const donation = await store.updateDonation(Number(req.params.id), req.body || {});
+  broadcast('snapshot', await snapshot());
   res.json({ ok: true, donation });
 });
 
-app.delete('/api/donations/:id', auth.requireAuth, (req, res) => {
-  const donation = store.deleteDonation(Number(req.params.id));
-  broadcast('snapshot', snapshot());
+app.delete('/api/donations/:id', auth.requireAuth, async (req, res) => {
+  const donation = await store.deleteDonation(Number(req.params.id));
+  broadcast('snapshot', await snapshot());
   res.json({ ok: true, donation });
 });
 
@@ -198,8 +198,8 @@ app.delete('/api/donations/:id', auth.requireAuth, (req, res) => {
 /* الإحصائيات (محمية)                                                  */
 /* ------------------------------------------------------------------ */
 
-app.get('/api/stats', auth.requireAuth, (req, res) => {
-  const campaign = store.campaignInfo();
+app.get('/api/stats', auth.requireAuth, async (req, res) => {
+  const campaign = await store.campaignInfo();
   const currency = (req.query.currency || campaign.goalCurrency).trim().toUpperCase();
   const from = (req.query.from || '').trim();
   const to = (req.query.to || '').trim();
@@ -209,12 +209,12 @@ app.get('/api/stats', auth.requireAuth, (req, res) => {
     from,
     to,
     campaign,
-    allTotals: store.totals(),
-    summary: store.statsSummary(currency, from, to),
-    byHour: store.statsByHour(currency, from, to),
-    byWeekday: store.statsByWeekday(currency, from, to),
-    byDate: store.statsByDate(currency, from, to),
-    cumulative: store.statsCumulative(currency, from, to),
+    allTotals: await store.totals(),
+    summary: await store.statsSummary(currency, from, to),
+    byHour: await store.statsByHour(currency, from, to),
+    byWeekday: await store.statsByWeekday(currency, from, to),
+    byDate: await store.statsByDate(currency, from, to),
+    cumulative: await store.statsCumulative(currency, from, to),
   });
 });
 
@@ -231,8 +231,8 @@ const EDITABLE_SETTINGS = [
   'end_date',
 ];
 
-app.get('/api/settings', auth.requireAuth, (_req, res) => {
-  const s = store.allSettings();
+app.get('/api/settings', auth.requireAuth, async (_req, res) => {
+  const s = await store.allSettings();
   const out = {};
   for (const key of EDITABLE_SETTINGS) out[key] = s[key];
   out.must_change_password = s.must_change_password;
@@ -240,39 +240,41 @@ app.get('/api/settings', auth.requireAuth, (_req, res) => {
   res.json(out);
 });
 
-app.put('/api/settings', auth.requireAuth, (req, res) => {
+app.put('/api/settings', auth.requireAuth, async (req, res) => {
   const body = req.body || {};
   const errors = [];
 
   if (body.goal_amount !== undefined) {
     const g = Number(body.goal_amount);
     if (!Number.isFinite(g) || g < 0) errors.push('الهدف المالي يجب أن يكون رقمًا صحيحًا');
-    else store.setSetting('goal_amount', String(g));
+    else await store.setSetting('goal_amount', String(g));
   }
   if (body.goal_currency !== undefined) {
     const c = String(body.goal_currency).trim().toUpperCase();
     if (!c || c.length > 24) errors.push('عملة الهدف غير صحيحة');
-    else store.setSetting('goal_currency', c);
+    else await store.setSetting('goal_currency', c);
   }
   for (const key of ['start_date', 'end_date']) {
     if (body[key] !== undefined) {
       const v = String(body[key]).trim();
       if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) errors.push('التاريخ يجب أن يكون بصيغة YYYY-MM-DD');
-      else store.setSetting(key, v);
+      else await store.setSetting(key, v);
     }
   }
   for (const key of ['campaign_title', 'campaign_subtitle']) {
     if (body[key] !== undefined) {
       const v = String(body[key]).trim();
       if (v.length > 160) errors.push('النص طويل جدًا');
-      else store.setSetting(key, v);
+      else await store.setSetting(key, v);
     }
   }
 
   if (errors.length) return res.status(400).json({ error: errors.join(' — ') });
 
-  broadcast('snapshot', snapshot());
-  res.json({ ok: true, settings: Object.fromEntries(EDITABLE_SETTINGS.map((k) => [k, store.getSetting(k)])) });
+  broadcast('snapshot', await snapshot());
+  const values = {};
+  for (const k of EDITABLE_SETTINGS) values[k] = await store.getSetting(k);
+  res.json({ ok: true, settings: values });
 });
 
 /* ------------------------------------------------------------------ */
@@ -280,8 +282,8 @@ app.put('/api/settings', auth.requireAuth, (req, res) => {
 /* ------------------------------------------------------------------ */
 
 function pageGuard(redirect) {
-  return (req, res, next) => {
-    if (auth.sessionFromRequest(req)) return next();
+  return async (req, res, next) => {
+    if (await auth.sessionFromRequest(req)) return next();
     res.redirect(`/login?next=${redirect}`);
   };
 }
@@ -290,8 +292,8 @@ app.get('/', (_req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
-app.get('/login', (req, res) => {
-  if (auth.sessionFromRequest(req)) return res.redirect('/admin');
+app.get('/login', async (req, res) => {
+  if (await auth.sessionFromRequest(req)) return res.redirect('/admin');
   res.sendFile(path.join(PUBLIC_DIR, 'login.html'));
 });
 
@@ -327,17 +329,38 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ error: err.message || 'خطأ في الخادم' });
 });
 
-app.listen(PORT, HOST, () => {
-  try {
-    fs.writeFileSync(path.join(ROOT_DIR, 'data', 'server.pid'), String(process.pid));
-  } catch (_e) {}
-  console.log('');
-  console.log('  ┌──────────────────────────────────────────────────┐');
-  console.log('  │  حملة سيارة إسعاف الظاهرية — الخادم يعمل        │');
-  console.log('  ├──────────────────────────────────────────────────┤');
-  console.log(`  │  الشاشة العامة : http://localhost:${PORT}/          │`);
-  console.log(`  │  الإدارة       : http://localhost:${PORT}/admin      │`);
-  console.log(`  │  الإحصائيات    : http://localhost:${PORT}/stats      │`);
-  console.log('  └──────────────────────────────────────────────────┘');
-  console.log('');
-});
+/* ------------------------------------------------------------------ */
+/* الإقلاع                                                             */
+/* ------------------------------------------------------------------ */
+
+async function start() {
+  await store.init();
+  await auth.ensureAdminPassword();
+  await store.cleanupSessions();
+  setInterval(() => store.cleanupSessions(), 60 * 60 * 1000).unref();
+
+  return app.listen(PORT, HOST, () => {
+    try {
+      fs.writeFileSync(path.join(ROOT_DIR, 'data', 'server.pid'), String(process.pid));
+    } catch (_e) {}
+    console.log('');
+    console.log('  ┌──────────────────────────────────────────────────┐');
+    console.log('  │  حملة سيارة إسعاف الظاهرية — الخادم يعمل        │');
+    console.log('  ├──────────────────────────────────────────────────┤');
+    console.log(`  │  الشاشة العامة : http://localhost:${PORT}/          │`);
+    console.log(`  │  الإدارة       : http://localhost:${PORT}/admin      │`);
+    console.log(`  │  الإحصائيات    : http://localhost:${PORT}/stats      │`);
+    console.log('  └──────────────────────────────────────────────────┘');
+    console.log('');
+  });
+}
+
+if (require.main === module) {
+  store.connect(process.env.DATABASE_URL);
+  start().catch((err) => {
+    console.error('فشل الإقلاع:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { app, start };

@@ -23,30 +23,32 @@ function verifyPassword(password, stored) {
   return crypto.timingSafeEqual(candidate, expected);
 }
 
-function ensureAdminPassword() {
-  if (!store.getSetting('admin_password_hash')) {
-    store.setSetting('admin_password_hash', hashPassword('admin'));
-    store.setSetting('must_change_password', '1');
+async function ensureAdminPassword() {
+  const existing = await store.getSetting('admin_password_hash');
+  if (!existing) {
+    await store.setSetting('admin_password_hash', hashPassword('admin'));
+    await store.setSetting('must_change_password', '1');
   }
 }
 
-function login(username, password) {
-  const user = store.getSetting('admin_username');
-  const hash = store.getSetting('admin_password_hash');
+async function login(username, password) {
+  const user = await store.getSetting('admin_username');
+  const hash = await store.getSetting('admin_password_hash');
   if (String(username || '').trim() !== user) return null;
   if (!verifyPassword(password, hash)) return null;
 
   const token = crypto.randomBytes(32).toString('hex');
-  store.createSession(token, SESSION_TTL_MS);
-  return { token, mustChangePassword: store.getSetting('must_change_password') === '1' };
+  await store.createSession(token, SESSION_TTL_MS);
+  const mustChangePassword = (await store.getSetting('must_change_password')) === '1';
+  return { token, mustChangePassword };
 }
 
-function logout(token) {
-  store.destroySession(token);
+async function logout(token) {
+  await store.destroySession(token);
 }
 
-function changePassword(oldPassword, newPassword) {
-  const hash = store.getSetting('admin_password_hash');
+async function changePassword(oldPassword, newPassword) {
+  const hash = await store.getSetting('admin_password_hash');
   if (!verifyPassword(oldPassword, hash)) {
     const err = new Error('كلمة المرور الحالية غير صحيحة');
     err.status = 401;
@@ -58,8 +60,8 @@ function changePassword(oldPassword, newPassword) {
     err.status = 400;
     throw err;
   }
-  store.setSetting('admin_password_hash', hashPassword(pw));
-  store.setSetting('must_change_password', '0');
+  await store.setSetting('admin_password_hash', hashPassword(pw));
+  await store.setSetting('must_change_password', '0');
 }
 
 function parseCookies(req) {
@@ -78,7 +80,7 @@ function getSessionToken(req) {
   return parseCookies(req)[COOKIE_NAME] || null;
 }
 
-function sessionFromRequest(req) {
+async function sessionFromRequest(req) {
   return store.getSession(getSessionToken(req));
 }
 
@@ -94,8 +96,8 @@ function clearSessionCookie(res) {
   res.setHeader('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);
 }
 
-function requireAuth(req, res, next) {
-  const session = sessionFromRequest(req);
+async function requireAuth(req, res, next) {
+  const session = await sessionFromRequest(req);
   if (!session) {
     return res.status(401).json({ error: 'يجب تسجيل الدخول للوصول إلى هذه الصفحة' });
   }
