@@ -1,0 +1,17 @@
+{
+  "name": "dahariyeh-ambulance-campaign",
+  "version": "1.0.0",
+  "description": "حملة التبرعات لشراء سيارة إسعاف لمدينة الظاهرية",
+  "main": "server/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "canvas-confetti": "^1.9.3",
+    "chart.js": "^4.5.0",
+    "express": "^5.1.0"
+  }
+}

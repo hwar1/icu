@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>إدارة التبرعات — حملة سيارة إسعاف الظاهرية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">إ</span>
+        <span>إدارة الحملة</span>
+      </div>
+      <nav class="nav">
+        <a href="/">الشاشة العامة</a>
+        <a href="/admin" class="active">الإدارة</a>
+        <a href="/stats">الإحصائيات</a>
+        <span id="live" class="live"><span class="dot"></span><span class="label">مباشر</span></span>
+        <button id="logoutBtn" type="button">خروج</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container page">
+    <h1 class="page-title">لوحة إدارة التبرعات</h1>
+    <p class="page-sub">تسجيل العمليات ومراجعتها وتصحيحها — كل عملية تُحفظ مع تاريخها ووقتها.</p>
+
+    <div id="pwWarn" class="alert warn">
+      ما زلت تستخدم كلمة المرور الافتراضية. غيّرها الآن من قسم «تغيير كلمة المرور» قبل أي استخدام آخر.
+    </div>
+    <div id="alert" class="alert"></div>
+
+    <div class="grid-2">
+      <section class="card">
+        <h2 id="formTitle">تسجيل تبرع جديد</h2>
+        <form id="donationForm">
+          <div class="row">
+            <div class="field">
+              <label for="amount">المبلغ</label>
+              <input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" required />
+            </div>
+            <div class="field">
+              <label for="currency">العملة</label>
+              <select id="currency">
+                <option value="ILS">شيكل (ILS)</option>
+                <option value="JOD">دينار أردني (JOD)</option>
+                <option value="USD">دولار أمريكي (USD)</option>
+                <option value="EUR">يورو (EUR)</option>
+                <option value="GBP">جنيه إسترليني (GBP)</option>
+                <option value="SAR">ريال سعودي (SAR)</option>
+                <option value="AED">درهم إماراتي (AED)</option>
+                <option value="EGP">جنيه مصري (EGP)</option>
+                <option value="OTHER">عملة أخرى…</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field hidden" id="customWrap">
+            <label for="customCurrency">اسم العملة أو رمزها</label>
+            <input id="customCurrency" placeholder="مثال: دينار ليبي" maxlength="24" />
+          </div>
+
+          <div class="field">
+            <label for="donatedAt">التاريخ والوقت</label>
+            <input id="donatedAt" type="datetime-local" required />
+          </div>
+
+          <div class="field">
+            <label for="note">ملاحظة (اختياري)</label>
+            <input id="note" maxlength="300" placeholder="اسم المتبرع أو مصدر المبلغ" />
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-gold btn-block" type="submit" id="submitBtn">إضافة التبرع</button>
+            <button class="btn btn-ghost hidden" type="button" id="cancelEdit">إلغاء التعديل</button>
+          </div>
+        </form>
+      </section>
+
+      <div class="stack">
+        <section class="card">
+          <h2>إعدادات الحملة</h2>
+          <form id="settingsForm">
+            <div class="row">
+              <div class="field">
+                <label for="goalAmount">المبلغ المستهدف</label>
+                <input id="goalAmount" type="number" min="0" step="1" required />
+              </div>
+              <div class="field">
+                <label for="goalCurrency">عملة الهدف</label>
+                <input id="goalCurrency" maxlength="24" required />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="startDate">بداية الحملة</label>
+                <input id="startDate" type="date" required />
+              </div>
+              <div class="field">
+                <label for="endDate">نهاية الحملة</label>
+                <input id="endDate" type="date" required />
+              </div>
+            </div>
+            <div class="field">
+              <label for="campaignTitle">عنوان الحملة</label>
+              <input id="campaignTitle" maxlength="160" required />
+            </div>
+            <button class="btn btn-gold btn-block" type="submit">حفظ الإعدادات</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>تغيير كلمة المرور</h2>
+          <form id="passwordForm">
+            <div class="field">
+              <label for="oldPassword">كلمة المرور الحالية</label>
+              <input id="oldPassword" type="password" autocomplete="current-password" required />
+            </div>
+            <div class="field">
+              <label for="newPassword">كلمة المرور الجديدة (6 أحرف على الأقل)</label>
+              <input id="newPassword" type="password" autocomplete="new-password" minlength="6" required />
+            </div>
+            <button class="btn btn-ghost btn-block" type="submit">تغيير كلمة المرور</button>
+          </form>
+        </section>
+      </div>
+    </div>
+
+    <section class="card mt-20">
+      <h2>سجل العمليات <span class="muted" style="font-size: 0.85rem;" id="listCount"></span></h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>المبلغ</th>
+              <th>العملة</th>
+              <th>ملاحظة</th>
+              <th>التاريخ</th>
+              <th>الوقت</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="donationsBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty hidden">لا توجد عمليات مسجّلة بعد.</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <b>معًا لتوفير سيارة إسعاف لمدينة الظاهرية</b>
+  </footer>
+
+  <script src="/js/shared.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

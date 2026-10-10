@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>معًا لتوفير سيارة إسعاف لمدينة الظاهرية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">إ</span>
+        <span>حملة سيارة إسعاف الظاهرية</span>
+      </div>
+      <div class="nav">
+        <span id="live" class="live"><span class="dot"></span><span class="label">مباشر</span></span>
+        <a href="/admin">لوحة الإدارة</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <span class="eyebrow fade-up">حملة تبرعات خيرية</span>
+      <h1 id="campaignTitle" class="fade-up d1">معًا لتوفير سيارة إسعاف <span>لمدينة الظاهرية</span></h1>
+      <p id="campaignSubtitle" class="fade-up d2">
+        حملة تبرعات لتجهيز سيارة إسعاف تخدم أهالي مدينة الظاهرية
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="counter-card fade-up d3">
+      <div class="counter-label">إجمالي التبرعات حتى الآن</div>
+
+      <div class="counter-value num" id="totalValue">0</div>
+      <div class="counter-currency" id="totalCurrency">شيكل</div>
+
+      <div class="progress-wrap">
+        <div class="progress-head">
+          <span>نسبة التقدم نحو هدف الحملة</span>
+          <b class="num" id="progressPct">0%</b>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="goal-line" id="goalLine">الهدف: — </div>
+      </div>
+
+      <div id="others" class="others"></div>
+
+      <div class="campaign-meta" id="campaignMeta"></div>
+    </div>
+
+    <p class="text-center muted mt-20" style="font-size: 0.9rem;">
+      تُحدَّث الأرقام لحظيًا — <span class="num" id="opCount">0</span> عملية تبرع مسجّلة
+    </p>
+  </main>
+
+  <div id="celebrate" class="celebrate">
+    <div class="celebrate-box">
+      <div class="tag">تم تسجيل تبرع جديد</div>
+      <div class="amount num" id="celAmount">0</div>
+      <div class="cur" id="celCurrency"></div>
+      <div class="note" id="celNote"></div>
+      <button class="btn btn-gold" id="celClose">شكرًا لك</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <b>معًا لتوفير سيارة إسعاف لمدينة الظاهرية</b>
+    <div>جميع التبرعات مسجّلة بتاريخها ووقتها</div>
+  </footer>
+
+  <script src="/vendor/canvas-confetti/dist/confetti.browser.js"></script>
+  <script src="/js/shared.js"></script>
+  <script src="/js/index.js"></script>
+</body>
+</html>

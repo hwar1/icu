@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>الإحصائيات — حملة سيارة إسعاف الظاهرية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">إ</span>
+        <span>إحصائيات الحملة</span>
+      </div>
+      <nav class="nav">
+        <a href="/">الشاشة العامة</a>
+        <a href="/admin">الإدارة</a>
+        <a href="/stats" class="active">الإحصائيات</a>
+        <span id="live" class="live"><span class="dot"></span><span class="label">مباشر</span></span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container page">
+    <h1 class="page-title">إحصائيات الحملة</h1>
+    <p class="page-sub">
+      تحليل دقيق لكل عملة على حدة — لا تُجمع المبالغ المختلفة دون تحويل صريح.
+    </p>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="filters">
+      <div class="seg" id="currencySeg"></div>
+      <div class="sep"></div>
+      <div class="seg" id="periodSeg">
+        <button type="button" data-period="today">اليوم</button>
+        <button type="button" data-period="week">الأسبوع</button>
+        <button type="button" data-period="month">الشهر</button>
+        <button type="button" data-period="all" class="active">منذ البداية</button>
+        <button type="button" data-period="custom">مخصص</button>
+      </div>
+      <div class="sep"></div>
+      <div id="customDates" class="hidden" style="display: flex; gap: 8px; align-items: center;">
+        <input type="date" id="fromDate" />
+        <span class="muted">إلى</span>
+        <input type="date" id="toDate" />
+        <button type="button" class="btn btn-gold btn-sm" id="applyDates">تطبيق</button>
+      </div>
+    </div>
+
+    <div class="grid-4 mt-20">
+      <div class="kpi">
+        <div class="k-label">إجمالي التبرعات</div>
+        <div class="k-value num" id="kpiTotal">0</div>
+        <div class="k-sub" id="kpiCurrency">—</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">عدد العمليات</div>
+        <div class="k-value num" id="kpiCount">0</div>
+        <div class="k-sub">بالعملة المحددة</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">متوسط العملية</div>
+        <div class="k-value num" id="kpiAvg">0</div>
+        <div class="k-sub" id="kpiAvgCurrency">—</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">عمليات جميع العملات</div>
+        <div class="k-value num" id="kpiAllOps">0</div>
+        <div class="k-sub">المبالغ معروضة منفصلة</div>
+      </div>
+    </div>
+
+    <div class="grid-2 mt-20">
+      <section class="card">
+        <h2>تطور الحملة منذ بدايتها</h2>
+        <div class="chart-box"><canvas id="chartCumulative"></canvas></div>
+      </section>
+      <section class="card">
+        <h2>المبالغ حسب الساعة</h2>
+        <div class="chart-box"><canvas id="chartHour"></canvas></div>
+      </section>
+      <section class="card">
+        <h2>المبالغ حسب أيام الأسبوع</h2>
+        <div class="chart-box"><canvas id="chartWeekday"></canvas></div>
+      </section>
+      <section class="card" id="dateCard">
+        <h2>المبالغ حسب التاريخ</h2>
+        <div class="chart-box"><canvas id="chartDate"></canvas></div>
+      </section>
+    </div>
+
+    <section class="card mt-20">
+      <h2>إجمالي كل عملة على حدة</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>العملة</th>
+              <th>الإجمالي</th>
+              <th>عدد العمليات</th>
+            </tr>
+          </thead>
+          <tbody id="currencyBody"></tbody>
+        </table>
+      </div>
+      <div id="currencyEmpty" class="empty hidden">لا توجد تبرعات مسجّلة بعد.</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <b>معًا لتوفير سيارة إسعاف لمدينة الظاهرية</b>
+  </footer>
+
+  <script src="/vendor/chart.js/dist/chart.umd.js"></script>
+  <script src="/js/shared.js"></script>
+  <script src="/js/stats.js"></script>
+</body>
+</html>
