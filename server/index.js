@@ -188,6 +188,12 @@ app.put('/api/donations/:id', auth.requireAuth, async (req, res) => {
   res.json({ ok: true, donation });
 });
 
+app.delete('/api/donations', auth.requireAuth, async (_req, res) => {
+  const deleted = await store.deleteAllDonations();
+  broadcast('snapshot', await snapshot());
+  res.json({ ok: true, deleted });
+});
+
 app.delete('/api/donations/:id', auth.requireAuth, async (req, res) => {
   const donation = await store.deleteDonation(Number(req.params.id));
   broadcast('snapshot', await snapshot());

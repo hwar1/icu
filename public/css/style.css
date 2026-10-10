@@ -344,9 +344,18 @@ select:focus-visible {
 
 .btn-danger { background: transparent; border: 1px solid rgba(224, 82, 82, 0.5); color: var(--danger); }
 .btn-danger:hover { background: rgba(224, 82, 82, 0.12); }
+.btn:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .btn-sm { padding: 7px 14px; font-size: 0.88rem; border-radius: 8px; }
 .btn-block { width: 100%; }
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
 /* ---------------- جداول ---------------- */
 

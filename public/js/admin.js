@@ -5,6 +5,8 @@
   let editingId = null;
   let rowsById = new Map();
   let refreshTimer = null;
+  let donationCount = 0;
+  let deletingAll = false;
 
   function nowInput() {
     const d = new Date();
@@ -21,7 +23,9 @@
   async function loadDonations() {
     const data = await App.api("/api/donations?limit=200");
     rowsById = new Map(data.items.map((d) => [d.id, d]));
+    donationCount = data.total;
     $("listCount").textContent = `(${App.formatNumber(data.total, 0)} عملية)`;
+    $("deleteAllBtn").disabled = deletingAll || donationCount === 0;
 
     const body = $("donationsBody");
     if (!data.items.length) {
@@ -122,6 +126,54 @@
   });
 
   $("cancelEdit").addEventListener("click", resetForm);
+
+  $("deleteAllBtn").addEventListener("click", async () => {
+    if (deletingAll || donationCount === 0) return;
+    const sure = confirm(
+      `هل أنت متأكد من حذف جميع التبرعات (${App.formatNumber(donationCount, 0)} عملية)؟ لا يمكن التراجع عن هذا الإجراء.`
+    );
+    if (!sure) return;
+    clear();
+    deletingAll = true;
+    $("deleteAllBtn").disabled = true;
+    try {
+      let result;
+      try {
+        result = await App.api("/api/donations", { method: "DELETE" });
+      } catch (err) {
+        if (err.status !== 404) throw err;
+
+        const items = [];
+        let offset = 0;
+        let total = 0;
+        do {
+          const page = await App.api(`/api/donations?limit=200&offset=${offset}`);
+          total = page.total;
+          if (page.items.length === 0 && offset < total) {
+            throw new Error("تعذر تحميل قائمة التبرعات كاملة");
+          }
+          items.push(...page.items);
+          offset += page.items.length;
+        } while (offset < total);
+        for (const donation of items) {
+          await App.api(`/api/donations/${donation.id}`, { method: "DELETE" });
+        }
+        result = { deleted: items.length };
+      }
+
+      if (editingId !== null) resetForm();
+      ok(`تم حذف جميع التبرعات (${App.formatNumber(result.deleted, 0)} عملية)`);
+    } catch (err) {
+      fail(err);
+    } finally {
+      deletingAll = false;
+      try {
+        await loadDonations();
+      } catch (err) {
+        fail(err);
+      }
+    }
+  });
 
   $("donationsBody").addEventListener("click", async (e) => {
     const editId = e.target.dataset?.edit;

@@ -260,6 +260,13 @@ async function deleteDonation(id) {
   return existing;
 }
 
+async function deleteAllDonations() {
+  const { rows } = await q('SELECT COUNT(*)::int AS c FROM donations');
+  const count = Number(rows[0].c);
+  await q('DELETE FROM donations');
+  return count;
+}
+
 /* ------------------------------------------------------------------ */
 /* الإجماليات                                                          */
 /* ------------------------------------------------------------------ */
@@ -392,6 +399,7 @@ module.exports = {
   createDonation,
   updateDonation,
   deleteDonation,
+  deleteAllDonations,
   currencyTotals,
   totals,
   statsSummary,

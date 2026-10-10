@@ -80,6 +80,8 @@ async function main() {
   check("رفض /api/stats بدون جلسة", statsNoAuth.status === 401, `status=${statsNoAuth.status}`);
   const donationsNoAuth = await req("/api/donations");
   check("رفض /api/donations بدون جلسة", donationsNoAuth.status === 401, `status=${donationsNoAuth.status}`);
+  const deleteAllNoAuth = await req("/api/donations", { method: "DELETE" });
+  check("رفض حذف جميع التبرعات بدون جلسة", deleteAllNoAuth.status === 401, `status=${deleteAllNoAuth.status}`);
   const settingsNoAuth = await req("/api/settings");
   check("رفض /api/settings بدون جلسة", settingsNoAuth.status === 401, `status=${settingsNoAuth.status}`);
 
@@ -193,9 +195,8 @@ async function main() {
   check("رفض تغيير كلمة المرور بممر قديم خاطئ", cpBad.status === 401, `status=${cpBad.status}`);
 
   console.log("7) التنظيف واستعادة الحالة");
-  for (const d of created) {
-    await req("/api/donations/" + d.id, { method: "DELETE", cookie: sidCookie });
-  }
+  const deletedAll = await req("/api/donations", { method: "DELETE", cookie: sidCookie });
+  check("حذف جميع التبرعات عبر الواجهة المحمية", deletedAll.status === 200 && deletedAll.data.deleted === created.length, `status=${deletedAll.status} deleted=${deletedAll.data && deletedAll.data.deleted}`);
   const tFinal = (await req("/api/campaign")).data;
   check("القاعدة عادت فارغة تمامًا", tFinal.totals.operations === 0 && tFinal.totals.byCurrency.length === 0 && tFinal.goalTotal === 0, JSON.stringify(tFinal.totals));
 
